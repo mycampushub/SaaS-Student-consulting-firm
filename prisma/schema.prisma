@@ -1,0 +1,2887 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-tenant SaaS Platform for Education Agencies
+
+model Agency {
+  id              String   @id @default(cuid())
+  name            String
+  subdomain       String   @unique
+  customDomain    String?
+  logo            String?
+  favicon         String?
+  primaryColor    String   @default("#3B82F6")
+  secondaryColor  String   @default("#10B981")
+  status          AgencyStatus @default(ACTIVE)
+  plan            AgencyPlan @default(FREE)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Feature Control System
+  featureSettings FeatureSettings?
+  
+  // Relations
+  users           User[]
+  students        Student[]
+  universities    University[]
+  brandSettings   BrandSettings?
+  billing         Billing?
+  applications    Application[]
+  activityLogs    ActivityLog[]
+  
+  // New modules
+  accounting      Accounting?
+  marketingCampaigns MarketingCampaign[]
+  landingPages    LandingPage[]
+  forms           Form[]
+  workflows       Workflow[]
+  
+  // Relations
+  leadScores      LeadScore[]
+  
+  // Additional relations
+  invoices        Invoice[]
+  transactions    Transaction[]
+  invoiceTemplates InvoiceTemplate[]
+  leads           Lead[]
+  formSubmissions FormSubmission[]
+  
+  // New advanced features relations
+  leadScoreRules  LeadScoreRule[]
+  qualificationCriteria QualificationCriteria[]
+  segments        Segment[]
+  tags            Tag[]
+  appointments    Appointment[]
+  emailTemplates  EmailTemplate[]
+  smsTemplates    SmsTemplate[]
+  emailCampaigns  EmailCampaign[]
+  smsCampaigns    SmsCampaign[]
+  emailMessages   EmailMessage[]
+  smsMessages     SmsMessage[]
+  documents       Document[]
+  notifications   Notification[]
+  tasks           Task[]
+  pipelines       Pipeline[]
+  segmentMembers  SegmentMember[]
+  tagAssignments  TagAssignment[]
+  documentShares  DocumentShare[]
+  pipelineEntries PipelineEntry[]
+  appointmentNotes AppointmentNote[]
+  taskComments    TaskComment[]
+  
+  // Milestone System
+  milestones      Milestone[]
+  milestoneInstances MilestoneInstance[]
+  
+  // Knowledge Base
+  knowledgeArticles KnowledgeArticle[]
+  knowledgeVersions KnowledgeVersion[]
+  knowledgeSearches KnowledgeSearch[]
+  
+  // Recommendation System
+  recommendationEngines RecommendationEngine[]
+  recommendations Recommendation[]
+  recommendationFeedbacks RecommendationFeedback[]
+  
+  // Chatbot System
+  chatbots        Chatbot[]
+  chatConversations ChatConversation[]
+  chatMessages    ChatMessage[]
+  chatFeedback    ChatFeedback[]
+  chatbotTraining ChatbotTraining[]
+  
+  // Events System
+  events          Event[]
+  eventRegistrations EventRegistration[]
+  eventAttendees  EventAttendee[]
+  eventAnalytics  EventAnalytics[]
+  journeyEvents   JourneyEvent[]
+  
+  @@map("agencies")
+}
+
+model BrandSettings {
+  id              String   @id @default(cuid())
+  agencyId        String   @unique
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  logo            String?
+  favicon         String?
+  primaryColor    String   @default("#3B82F6")
+  secondaryColor  String   @default("#10B981")
+  customCss       String?
+  emailTemplate   String?
+  smsTemplate     String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("brand_settings")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  role          UserRole  @default(AGENCY_ADMIN)
+  status        UserStatus @default(ACTIVE)
+  agencyId      String?
+  agency        Agency?   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Profile
+  avatar        String?
+  phone         String?
+  title         String?
+  department    String?
+  
+  // Auth
+  emailVerified Boolean   @default(false)
+  lastLoginAt   DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  activityLogs  ActivityLog[]
+  
+  // New relations
+  appointments   Appointment[]
+  assignedTasks  Task[]
+  taskComments   TaskComment[]
+  appointmentNotes AppointmentNote[]
+  
+  // Knowledge Base relations
+  authoredKnowledgeVersions KnowledgeVersion[] @relation("authoredKnowledgeVersions")
+  reviewedKnowledgeVersions KnowledgeVersion[] @relation("reviewedKnowledgeVersions")
+  knowledgeSearches KnowledgeSearch[]
+  
+  // Chatbot relations
+  chatConversations ChatConversation[]
+  chatMessages     ChatMessage[]
+  chatFeedback     ChatFeedback[]
+  
+  // Recommendation relations
+  recommendationFeedbacks RecommendationFeedback[]
+  
+  @@map("users")
+}
+
+model Student {
+  id            String   @id @default(cuid())
+  agencyId      String
+  agency        Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Personal Info
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  dateOfBirth   DateTime?
+  nationality   String?
+  passportNumber String?
+  
+  // Application Status
+  status        StudentStatus @default(PROSPECT)
+  stage         ApplicationStage @default(INQUIRY)
+  
+  // Academic Info
+  currentEducation String?
+  gpa           Float?
+  testScores    String? // JSON
+  
+  // Preferences
+  preferredCountries String? // JSON array
+  preferredCourses   String? // JSON array
+  budget          Float?
+  
+  // Documents
+  documents      String? // JSON array of document paths
+  
+  // Timeline
+  assignedTo     String? // User ID
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  applications   Application[]
+  
+  // Additional relations
+  invoices        Invoice[]
+  transactions    Transaction[]
+  leads           Lead[]
+  
+  // New advanced features relations
+  leadScores      LeadScore[]
+  segmentMembers  SegmentMember[]
+  tagAssignments  TagAssignment[]
+  appointments    Appointment[]
+  emailMessages   EmailMessage[]
+  smsMessages     SmsMessage[]
+  documentShares  DocumentShare[]
+  notifications   Notification[]
+  tasks           Task[]
+  pipelineEntries PipelineEntry[]
+  milestoneInstances MilestoneInstance[]
+  recommendations Recommendation[]
+  chatConversations ChatConversation[]
+  eventRegistrations EventRegistration[]
+  
+  @@map("students")
+}
+
+model University {
+  id            String   @id @default(cuid())
+  agencyId      String
+  agency        Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  name          String
+  country       String
+  city          String
+  website       String?
+  description   String?
+  
+  // Ranking & Accreditation
+  worldRanking  Int?
+  nationalRanking Int?
+  accreditation String? // JSON array
+  
+  // Programs
+  programs      String? // JSON array of programs
+  requirements  String? // JSON
+  
+  // Partnership
+  isPartner     Boolean  @default(false)
+  partnershipLevel PartnershipLevel @default(NONE)
+  commissionRate Float?
+  
+  // Contact
+  contactEmail  String?
+  contactPhone  String?
+  address       String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  applications  Application[]
+  
+  @@map("universities")
+}
+
+model Application {
+  id            String   @id @default(cuid())
+  agencyId      String
+  agency        Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  universityId  String
+  university    University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  
+  program       String
+  intake        String?
+  status        ApplicationStatus @default(DRAFT)
+  
+  // Progress Tracking
+  documents     String? // JSON array of submitted documents
+  payments      String? // JSON array of payment records
+  communications String? // JSON array of communication logs
+  
+  assignedTo    String? // User ID
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // New advanced features relations
+  tagAssignments  TagAssignment[]
+  tasks           Task[]
+  pipelineEntries PipelineEntry[]
+  milestoneInstances MilestoneInstance[]
+  
+  @@map("applications")
+}
+
+model Billing {
+  id            String   @id @default(cuid())
+  agencyId      String   @unique
+  agency        Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Subscription
+  plan          AgencyPlan
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  
+  // Usage
+  studentCount  Int      @default(0)
+  userCount     Int      @default(0)
+  storageUsed   Int      @default(0) // in MB
+  
+  // Billing Cycle
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  
+  // Invoices
+  invoices      String? // JSON array of invoice records
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("billing")
+}
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  agencyId      String
+  agency        Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  
+  action        String
+  entityType    String
+  entityId      String
+  changes       String? // JSON
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime @default(now())
+  
+  @@map("activity_logs")
+}
+
+// Accounting Module
+model Accounting {
+  id              String   @id @default(cuid())
+  agencyId        String   @unique
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Financial Settings
+  currency        String   @default("USD")
+  timezone        String   @default("UTC")
+  
+  // Revenue Tracking
+  totalRevenue    Float    @default(0)
+  monthlyRevenue  Float    @default(0)
+  
+  // Expense Tracking
+  totalExpenses   Float    @default(0)
+  monthlyExpenses Float   @default(0)
+  
+  // Profit/Loss
+  netProfit       Float    @default(0)
+  profitMargin    Float    @default(0)
+  
+  // Accounting Software Integration
+  accountingProvider AccountingProvider?
+  accountingConfig String? // JSON configuration for accounting software
+  isConnected     Boolean  @default(false)
+  lastSyncAt      DateTime?
+  syncStatus      SyncStatus @default(NOT_CONNECTED)
+  
+  // Invoices
+  invoices        Invoice[]
+  
+  // Transactions
+  transactions    Transaction[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("accounting")
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  accountingId    String
+  accounting      Accounting @relation(fields: [accountingId], references: [id], onDelete: Cascade)
+  
+  // Invoice Details
+  invoiceNumber   String   @unique
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  
+  amount          Float
+  currency        String   @default("USD")
+  status          InvoiceStatus @default(DRAFT)
+  
+  // Dates
+  issueDate       DateTime
+  dueDate         DateTime
+  paidDate        DateTime?
+  
+  // Items
+  items           String   // JSON array of invoice items
+  
+  // Payment Info
+  paymentMethod   String?
+  transactionId   String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  transactions    Transaction[]
+  
+  @@map("invoices")
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  accountingId    String
+  accounting      Accounting @relation(fields: [accountingId], references: [id], onDelete: Cascade)
+  
+  // Transaction Details
+  type            TransactionType
+  amount          Float
+  currency        String   @default("USD")
+  description     String?
+  
+  // References
+  invoiceId       String?
+  invoice         Invoice? @relation(fields: [invoiceId], references: [id])
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  
+  // Status
+  status          TransactionStatus @default(COMPLETED)
+  
+  // Payment Info
+  paymentMethod   String?
+  transactionId   String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("transactions")
+}
+
+// Invoice Template Model
+model InvoiceTemplate {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Template Details
+  name            String
+  description     String?
+  serviceType     InvoiceTemplateServiceType
+  
+  // Items
+  items           String   // JSON array of template items
+  
+  // Content
+  terms           String?
+  notes           String?
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  autoGenerate    Boolean  @default(false)
+  triggerConditions String? // JSON array of trigger conditions
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("invoice_templates")
+}
+
+// Marketing Automation Module
+model MarketingCampaign {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Campaign Details
+  name            String
+  description     String?
+  type            CampaignType
+  status          CampaignStatus @default(DRAFT)
+  
+  // Targeting
+  targetAudience  String? // JSON array of targeting criteria
+  
+  // Content
+  content         String? // JSON configuration
+  templateId      String?
+  
+  // Automation
+  workflowId      String?
+  workflow        Workflow? @relation(fields: [workflowId], references: [id])
+  
+  // Performance
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  openedCount     Int      @default(0)
+  clickedCount    Int      @default(0)
+  conversionCount Int      @default(0)
+  
+  // Budget
+  budget          Float?
+  spent           Float    @default(0)
+  
+  // Schedule
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  leads           Lead[]
+  
+  @@map("marketing_campaigns")
+}
+
+model Lead {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  campaignId      String?
+  campaign        MarketingCampaign? @relation(fields: [campaignId], references: [id])
+  
+  // Lead Information
+  firstName       String?
+  lastName        String?
+  email           String?
+  phone           String?
+  source          String? // Facebook, Google, Organic, etc.
+  
+  // Status
+  status          LeadStatus @default(NEW)
+  
+  // Assignment
+  assignedTo      String? // User ID
+  
+  // Data
+  customFields    String? // JSON object
+  
+  // Conversion
+  converted       Boolean  @default(false)
+  convertedAt     DateTime?
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  formSubmissions FormSubmission[]
+  
+  // New advanced features relations
+  leadScores      LeadScore[]
+  segmentMembers  SegmentMember[]
+  tagAssignments  TagAssignment[]
+  appointments    Appointment[]
+  emailMessages   EmailMessage[]
+  smsMessages     SmsMessage[]
+  documentShares  DocumentShare[]
+  notifications   Notification[]
+  tasks           Task[]
+  pipelineEntries PipelineEntry[]
+  milestoneInstances MilestoneInstance[]
+  recommendations Recommendation[]
+  chatConversations ChatConversation[]
+  eventRegistrations EventRegistration[]
+  
+  @@map("leads")
+}
+
+// Landing Page Builder
+model LandingPage {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Page Details
+  name            String
+  slug            String
+  title           String?
+  description     String?
+  
+  // Content
+  content         String   // JSON page structure
+  templateId      String?
+  
+  // Design
+  customCss       String?
+  customJs        String?
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  
+  // Analytics
+  viewCount       Int      @default(0)
+  conversionCount Int      @default(0)
+  
+  // Status
+  status          PageStatus @default(DRAFT)
+  publishedAt     DateTime?
+  
+  // Integration
+  formId          String?
+  form            Form?    @relation(fields: [formId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([agencyId, slug])
+  @@map("landing_pages")
+}
+
+// Form Builder
+model Form {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Form Details
+  name            String
+  description     String?
+  
+  // Fields
+  fields          String   // JSON array of form fields
+  
+  // Settings
+  submitButton    String   @default("Submit")
+  successMessage  String   @default("Thank you for your submission!")
+  redirectUrl     String?
+  
+  // Integration
+  facebookLeadId  String?  // Facebook Lead Ad ID
+  googleLeadId    String?  // Google Lead Form ID
+  webhookUrl      String?
+  
+  // Analytics
+  submissionCount Int      @default(0)
+  
+  // Status
+  status          FormStatus @default(ACTIVE)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  submissions     FormSubmission[]
+  landingPages    LandingPage[]
+  
+  @@map("forms")
+}
+
+model FormSubmission {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  formId          String
+  form            Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  
+  // Submission Data
+  data            String   // JSON object of submitted data
+  
+  // Source
+  source          String?  // landing-page, direct, etc.
+  sourceUrl       String?
+  ipAddress       String?
+  userAgent       String?
+  
+  // Lead Conversion
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("form_submissions")
+}
+
+// Workflow Automation Builder (GoHighLevel style)
+model Workflow {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Workflow Details
+  name            String
+  description     String?
+  category        WorkflowCategory @default(GENERAL)
+  status          WorkflowStatus @default(DRAFT)
+  
+  // Triggers
+  triggers        String   // JSON array of triggers
+  
+  // Flow
+  nodes           String   // JSON array of workflow nodes
+  edges           String   // JSON array of workflow edges
+  
+  // Settings
+  isActive        Boolean  @default(false)
+  priority        Int      @default(0)
+  
+  // Execution
+  executionCount  Int      @default(0)
+  lastExecutedAt  DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  marketingCampaigns MarketingCampaign[]
+  
+  @@map("workflows")
+}
+
+// Lead Scoring & Qualification System
+model LeadScoreRule {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Rule Details
+  name            String
+  description     String?
+  category        ScoreRuleCategory @default(ENGAGEMENT)
+  
+  // Conditions
+  conditions      String   // JSON array of conditions
+  action          ScoreAction @default(ADD)
+  points          Int      @default(0)
+  
+  // Targeting
+  targetAudience  String?  // JSON targeting criteria
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  priority        Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  leadScores      LeadScore[]
+  
+  @@map("lead_score_rules")
+}
+
+model LeadScore {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  ruleId          String
+  rule            LeadScoreRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Score Details
+  points          Int
+  action          ScoreAction
+  reason          String?
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("lead_scores")
+}
+
+model QualificationCriteria {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Criteria Details
+  name            String
+  description     String?
+  category        QualificationCategory @default(ACADEMIC)
+  
+  // Conditions
+  conditions      String   // JSON array of conditions
+  weight          Float    @default(1.0)
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("qualification_criteria")
+}
+
+// Advanced Segmentation & Tagging System
+model Segment {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Segment Details
+  name            String
+  description     String?
+  type            SegmentType @default(STATIC)
+  category        SegmentCategory @default(GENERAL)
+  
+  // Conditions
+  conditions      String   // JSON array of conditions
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  isDynamic       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  segmentMembers  SegmentMember[]
+  
+  @@map("segments")
+}
+
+model SegmentMember {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  segmentId       String
+  segment         Segment  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  
+  // Member Details
+  memberId        String   // Student ID or Lead ID
+  memberType      MemberType @default(STUDENT)
+  
+  // Relations
+  student         Student? @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  addedAt         DateTime @default(now())
+  addedBy         String?  // User ID
+  
+  @@unique([segmentId, memberId, memberType])
+  @@map("segment_members")
+}
+
+model Tag {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Tag Details
+  name            String
+  description     String?
+  color           String?  // Hex color code
+  category        TagCategory @default(GENERAL)
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  tagAssignments  TagAssignment[]
+  
+  @@unique([agencyId, name])
+  @@map("tags")
+}
+
+model TagAssignment {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  tagId           String
+  tag             Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  // Assignment Details
+  entityId        String   // Student ID, Lead ID, etc.
+  entityType      EntityType @default(STUDENT)
+  
+  // Relations
+  student         Student? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  application     Application? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  assignedAt      DateTime @default(now())
+  assignedBy      String?  // User ID
+  
+  @@unique([tagId, entityId, entityType])
+  @@map("tag_assignments")
+}
+
+// Appointment Scheduling System
+model Appointment {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Appointment Details
+  title           String
+  description     String?
+  
+  // Participants
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  consultantId    String
+  consultant      User     @relation(fields: [consultantId], references: [id])
+  
+  // Scheduling
+  startTime       DateTime
+  endTime         DateTime
+  timezone        String   @default("UTC")
+  
+  // Status
+  status          AppointmentStatus @default(SCHEDULED)
+  
+  // Type
+  type            AppointmentType @default(CONSULTATION)
+  
+  // Location
+  location        String?
+  meetingUrl      String?
+  
+  // Reminders
+  reminders       String?  // JSON array of reminder settings
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  appointmentNotes AppointmentNote[]
+  
+  @@map("appointments")
+}
+
+model AppointmentNote {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  appointmentId   String
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  
+  // Note Details
+  content         String
+  type            NoteType @default(GENERAL)
+  
+  // Author
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("appointment_notes")
+}
+
+// Communication Templates & Automation System
+model EmailTemplate {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Template Details
+  name            String
+  description     String?
+  category        TemplateCategory @default(GENERAL)
+  
+  // Content
+  subject         String
+  body            String
+  design          String?  // JSON design configuration
+  
+  // Variables
+  variables       String?  // JSON array of variables
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  emailCampaigns  EmailCampaign[]
+  
+  @@map("email_templates")
+}
+
+model SmsTemplate {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Template Details
+  name            String
+  description     String?
+  category        TemplateCategory @default(GENERAL)
+  
+  // Content
+  message         String
+  
+  // Variables
+  variables       String?  // JSON array of variables
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  smsCampaigns    SmsCampaign[]
+  
+  @@map("sms_templates")
+}
+
+model EmailCampaign {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  templateId      String
+  template        EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  // Campaign Details
+  name            String
+  description     String?
+  
+  // Targeting
+  targetAudience  String   // JSON targeting criteria
+  
+  // Scheduling
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  
+  // Status
+  status          CampaignStatus @default(DRAFT)
+  
+  // Performance
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  openedCount     Int      @default(0)
+  clickedCount    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  emailMessages   EmailMessage[]
+  
+  @@map("email_campaigns")
+}
+
+model SmsCampaign {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  templateId      String
+  template        SmsTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  // Campaign Details
+  name            String
+  description     String?
+  
+  // Targeting
+  targetAudience  String   // JSON targeting criteria
+  
+  // Scheduling
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  
+  // Status
+  status          CampaignStatus @default(DRAFT)
+  
+  // Performance
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  smsMessages     SmsMessage[]
+  
+  @@map("sms_campaigns")
+}
+
+model EmailMessage {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  campaignId      String
+  campaign        EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  // Message Details
+  to              String
+  subject         String
+  body            String
+  
+  // Status
+  status          CampaignMessageStatus @default(DRAFT)
+  
+  // Tracking
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  
+  // References
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("email_messages")
+}
+
+model SmsMessage {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  campaignId      String
+  campaign        SmsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  // Message Details
+  to              String
+  message         String
+  
+  // Status
+  status          CampaignMessageStatus @default(DRAFT)
+  
+  // Tracking
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  
+  // References
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("sms_messages")
+}
+
+// Document Management System
+model Document {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Document Details
+  name            String
+  description     String?
+  type            DocumentType @default(GENERAL)
+  category        DocumentCategory @default(GENERAL)
+  
+  // File Info
+  fileName        String
+  filePath        String
+  fileSize        Int      // in bytes
+  mimeType        String
+  
+  // Access Control
+  isPublic        Boolean  @default(false)
+  accessLevel     AccessLevel @default(AGENCY)
+  
+  // Metadata
+  tags            String?  // JSON array of tags
+  metadata        String?  // JSON metadata
+  
+  // Status
+  status          DocumentStatus @default(ACTIVE)
+  
+  // Ownership
+  uploadedBy      String   // User ID
+  uploadedAt      DateTime @default(now())
+  
+  // Relations
+  documentShares  DocumentShare[]
+  
+  @@map("documents")
+}
+
+model DocumentShare {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  documentId      String
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  // Share Details
+  sharedWith      String   // User ID or Student ID
+  sharedWithType  SharedWithType @default(USER)
+  accessLevel     AccessLevel @default(VIEW)
+  
+  // Relations
+  student         Student? @relation(fields: [sharedWith], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [sharedWith], references: [id], onDelete: Cascade)
+  
+  // Expiration
+  expiresAt       DateTime?
+  
+  // Metadata
+  sharedBy        String   // User ID
+  sharedAt        DateTime @default(now())
+  
+  @@map("document_shares")
+}
+
+// Notification System
+model Notification {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Notification Details
+  type            NotificationType @default(INFO)
+  title           String
+  message         String
+  
+  // Recipient
+  recipientId     String   // User ID or Student ID
+  recipientType   RecipientType @default(USER)
+  
+  // Relations
+  student         Student? @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  // Channel
+  channel         NotificationChannel @default(IN_APP)
+  
+  // Status
+  status          NotificationStatus @default(PENDING)
+  
+  // Scheduling
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  
+  // Content
+  data            String?  // JSON additional data
+  
+  // Priority
+  priority        NotificationPriority @default(MEDIUM)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("notifications")
+}
+
+// Task Management System
+model Task {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Task Details
+  title           String
+  description     String?
+  type            TaskType @default(GENERAL)
+  category        TaskCategory @default(GENERAL)
+  
+  // Assignment
+  assignedTo      String   // User ID
+  assignee        User?     @relation(fields: [assignedTo], references: [id])
+  
+  // Context
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  applicationId   String?
+  application     Application? @relation(fields: [applicationId], references: [id])
+  
+  // Scheduling
+  dueDate         DateTime?
+  dueTime         String?
+  reminderAt      DateTime?
+  
+  // Status
+  status          TaskStatus @default(PENDING)
+  priority        TaskPriority @default(MEDIUM)
+  
+  // Progress
+  progress        Int      @default(0) // 0-100
+  
+  // Dependencies
+  dependsOn       String?  // Task ID
+  
+  // Metadata
+  tags            String?  // JSON array of tags
+  metadata        String?  // JSON metadata
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  taskComments    TaskComment[]
+  
+  @@map("tasks")
+}
+
+model TaskComment {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  taskId          String
+  task            Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  // Comment Details
+  content         String
+  
+  // Author
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("task_comments")
+}
+
+// Feature Control System
+model FeatureSettings {
+  id              String   @id @default(cuid())
+  agencyId        String   @unique
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Student Journey Features
+  studentJourneyEnabled Boolean @default(true)
+  visualProgressTracker Boolean @default(true)
+  automatedMilestones Boolean @default(true)
+  
+  // Knowledge Base Features
+  knowledgeBaseEnabled Boolean @default(true)
+  guidelinesRepository Boolean @default(true)
+  automatedRecommendations Boolean @default(true)
+  
+  // Communication Features
+  aiChatbotEnabled Boolean @default(false)
+  twoWayMessaging Boolean @default(true)
+  whatsappIntegration Boolean @default(false)
+  
+  // Events & Webinars
+  virtualEventsEnabled Boolean @default(false)
+  webinarIntegration Boolean @default(false)
+  eventRegistration Boolean @default(false)
+  
+  // Marketing & Segmentation
+  advancedSegmentation Boolean @default(true)
+  targetedCampaigns Boolean @default(true)
+  leadScoringEnabled Boolean @default(true)
+  
+  // Integration Features
+  accountingIntegration Boolean @default(false)
+  calendarIntegration Boolean @default(false)
+  videoConferencingIntegration Boolean @default(false)
+  
+  // Advanced Features
+  predictiveAnalytics Boolean @default(false)
+  advancedReporting Boolean @default(true)
+  customWorkflows Boolean @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("feature_settings")
+}
+
+// Pipeline Management System
+model Pipeline {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Pipeline Details
+  name            String
+  description     String?
+  type            PipelineType @default(LEAD_CONVERSION)
+  category        PipelineCategory @default(GENERAL)
+  
+  // Enhanced Stages with SLA and Requirements
+  stages          String   // JSON array of enhanced pipeline stages with SLA, requirements, auto-actions
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  isDefault       Boolean  @default(false)
+  
+  // Journey Mapping Features
+  enableSLA       Boolean  @default(true)
+  enableAutoActions Boolean @default(true)
+  enableAuditTrail Boolean @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  entries         PipelineEntry[]
+  journeyEvents   JourneyEvent[]
+  milestones      Milestone[]
+  
+  @@map("pipelines")
+}
+
+model PipelineEntry {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  pipelineId      String
+  pipeline        Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  
+  // Entry Details
+  entityId        String   // Student ID, Lead ID, etc.
+  entityType      EntityType @default(STUDENT)
+  
+  // Relations
+  student         Student? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  application     Application? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  // Stage Management
+  currentStage    String
+  previousStage   String?
+  stageStatus     StageStatus @default(NOT_STARTED)
+  
+  // Progress Tracking
+  progress        Float    @default(0.0) // 0.0-1.0
+  percentageComplete Float @default(0.0) // 0-100%
+  
+  // SLA Tracking
+  slaDeadline     DateTime?
+  slaBreached     Boolean  @default(false)
+  slaBreachedAt   DateTime?
+  
+  // Metadata
+  data            String?  // JSON additional data
+  notes           String?
+  
+  // Timeline
+  enteredAt       DateTime @default(now())
+  exitedAt        DateTime?
+  estimatedCompletion DateTime?
+  
+  // Movement
+  movedBy         String?  // User ID who moved the entry
+  moveReason      String?  // Reason for stage change
+  moveNotes       String?
+  
+  // Relations
+  journeyEvents   JourneyEvent[]
+  
+  @@map("pipeline_entries")
+}
+
+// Journey Event Model for Audit Trail
+model JourneyEvent {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  pipelineId      String
+  pipeline        Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  pipelineEntryId String
+  pipelineEntry   PipelineEntry @relation(fields: [pipelineEntryId], references: [id], onDelete: Cascade)
+  
+  // Event Details
+  eventType       JourneyEventType
+  eventName       String
+  description     String?
+  
+  // Stage Information
+  fromStage       String?
+  toStage         String?
+  
+  // Entity Information
+  entityId        String
+  entityType      EntityType
+  
+  // User Information
+  triggeredBy     String?  // User ID or "system"
+  triggeredByType TriggeredByType @default(USER)
+  
+  // Event Data
+  eventData       String?  // JSON event data
+  
+  // SLA Information
+  slaImpact       Boolean  @default(false)
+  slaDays         Int?
+  
+  // Auto Actions
+  autoActions     String?  // JSON array of auto-triggered actions
+  
+  // Timeline
+  createdAt       DateTime @default(now())
+  
+  @@map("journey_events")
+}
+
+// Automated Milestones System
+model Milestone {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Milestone Details
+  name            String
+  description     String?
+  type            MilestoneType
+  category        MilestoneCategory @default(GENERAL)
+  
+  // Stage Mapping
+  pipelineType    PipelineType?
+  stageName       String?
+  
+  // Trigger Conditions
+  triggerConditions String // JSON array of trigger conditions
+  
+  // Required Inputs
+  requiredInputs  String? // JSON array of required inputs/documents
+  
+  // Expected Outputs
+  expectedOutputs String? // JSON array of expected outputs/results
+  
+  // Automation Settings
+  autoActions     String? // JSON array of automated actions
+  reminders       String? // JSON array of reminder configurations
+  
+  // SLA Settings
+  slaDays         Int?     // Service Level Agreement in days
+  escalationRules String? // JSON array of escalation rules
+  
+  // Settings
+  isActive        Boolean  @default(true)
+  isSystem        Boolean  @default(false) // System milestones vs custom
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  milestoneInstances MilestoneInstance[]
+  pipelines       Pipeline[]
+  
+  @@map("milestones")
+}
+
+model MilestoneInstance {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  milestoneId     String
+  milestone       Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  
+  // Entity Information
+  entityId        String   // Student ID, Lead ID, Application ID
+  entityType      EntityType @default(STUDENT)
+  
+  // Relations
+  student         Student? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  application     Application? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  // Status
+  status          MilestoneStatus @default(PENDING)
+  progress        Float    @default(0.0) // 0.0-1.0
+  
+  // Timeline
+  triggeredAt     DateTime @default(now())
+  dueDate         DateTime?
+  completedAt     DateTime?
+  
+  // SLA Tracking
+  slaDeadline     DateTime?
+  slaBreached     Boolean  @default(false)
+  slaBreachedAt   DateTime?
+  
+  // Data
+  inputs          String?  // JSON provided inputs
+  outputs         String?  // JSON generated outputs
+  notes           String?
+  
+  // Completion
+  completedBy     String?  // User ID or "system"
+  completionData  String?  // JSON completion data
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("milestone_instances")
+}
+
+// Knowledge Base System
+model KnowledgeArticle {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Article Details
+  title           String
+  slug            String
+  description     String?
+  content         String   // Rich text content
+  excerpt         String?  // Short summary
+  
+  // Categorization
+  type            KnowledgeType
+  category        KnowledgeCategory @default(GENERAL)
+  tags            String?  // JSON array of tags
+  
+  // Targeting
+  targetCountries String?  // JSON array of target countries
+  targetUniversities String? // JSON array of target universities
+  targetPrograms  String?  // JSON array of target programs
+  visaTypes       String?  // JSON array of visa types
+  
+  // Requirements & Deadlines
+  requirements    String?  // JSON array of requirements
+  deadlines       String?  // JSON array of deadlines
+  documents       String?  // JSON array of required documents
+  tests           String?  // JSON array of required tests
+  minGPA          Float?
+  fees            String?  // JSON array of fee information
+  
+  // Metadata
+  sourceLinks     String?  // JSON array of source links
+  author          String?
+  reviewer        String?
+  lastReviewedAt  DateTime?
+  nextReviewDate  DateTime?
+  
+  // Settings
+  isPublished     Boolean  @default(false)
+  isFeatured      Boolean  @default(false)
+  isDeprecated    Boolean  @default(false)
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  
+  // Analytics
+  viewCount       Int      @default(0)
+  searchCount     Int      @default(0)
+  helpfulCount    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  versions        KnowledgeVersion[]
+  knowledgeSearches KnowledgeSearch[]
+  
+  @@unique([agencyId, slug])
+  @@map("knowledge_articles")
+}
+
+model KnowledgeVersion {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  articleId       String
+  article         KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  
+  // Version Details
+  versionNumber   Int
+  title           String
+  content         String
+  changeLog       String?
+  
+  // Author
+  authorId        String?
+  author          User?    @relation("authoredKnowledgeVersions", fields: [authorId], references: [id])
+  
+  // Review
+  reviewerId      String?
+  reviewer        User?    @relation("reviewedKnowledgeVersions", fields: [reviewerId], references: [id])
+  reviewStatus    ReviewStatus @default(DRAFT)
+  reviewNotes     String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("knowledge_versions")
+}
+
+model KnowledgeSearch {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Search Details
+  query           String
+  resultsCount    Int      @default(0)
+  
+  // User
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  
+  // Results
+  clickedArticleId String?
+  clickedArticle  KnowledgeArticle? @relation(fields: [clickedArticleId], references: [id])
+  
+  // Analytics
+  searchDuration  Int?     // Search duration in milliseconds
+  hasResults      Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("knowledge_searches")
+}
+
+// Automated Recommendations System
+model RecommendationEngine {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Engine Configuration
+  name            String
+  description     String?
+  type            RecommendationType
+  status          EngineStatus @default(ACTIVE)
+  
+  // Matching Rules
+  matchingRules   String   // JSON array of matching rules
+  scoringWeights  String   // JSON scoring weights configuration
+  filters         String?  // JSON array of filters
+  
+  // Input Requirements
+  requiredInputs  String?  // JSON array of required input fields
+  optionalInputs  String?  // JSON array of optional input fields
+  
+  // Output Configuration
+  maxResults      Int      @default(10)
+  minScore        Float    @default(0.5)
+  sortCriteria    String?  // JSON sorting criteria
+  
+  // Settings
+  isDefault       Boolean  @default(false)
+  version         Int      @default(1)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  recommendations Recommendation[]
+  
+  @@map("recommendation_engines")
+}
+
+model Recommendation {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  engineId        String
+  engine          RecommendationEngine @relation(fields: [engineId], references: [id], onDelete: Cascade)
+  
+  // Entity Information
+  entityId        String   // Student ID, Lead ID
+  entityType      RecommendationEntityType @default(STUDENT)
+  
+  // Relations
+  student         Student? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  lead            Lead?    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  // Recommendation Data
+  recommendations String   // JSON array of recommended items
+  scores          String   // JSON array of scores
+  reasons         String?  // JSON array of explanation reasons
+  inputProfile    String   // JSON input profile used for matching
+  
+  // Performance
+  clickCount      Int      @default(0)
+  conversionCount Int      @default(0)
+  
+  // Status
+  status          RecommendationStatus @default(PENDING)
+  
+  // Timeline
+  generatedAt     DateTime @default(now())
+  expiresAt       DateTime?
+  viewedAt        DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  feedback        RecommendationFeedback[]
+  
+  @@map("recommendations")
+}
+
+model RecommendationFeedback {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  recommendationId String
+  recommendation  Recommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  
+  // Feedback Details
+  rating          Int      // 1-5 rating
+  feedback        String?
+  helpful         Boolean
+  actionTaken     String?  // What action was taken
+  
+  // User
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  
+  // Item Specific
+  itemIndex       Int?     // Index of the item in recommendations array
+  itemId          String?  // ID of the specific item
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("recommendation_feedback")
+}
+
+// AI-Powered Chatbot System
+model Chatbot {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Chatbot Configuration
+  name            String
+  description     String?
+  status          ChatbotStatus @default(ACTIVE)
+  
+  // AI Configuration
+  model           String   @default("gpt-3.5-turbo")
+  temperature     Float    @default(0.7)
+  maxTokens       Int      @default(500)
+  systemPrompt    String?
+  
+  // Knowledge Base Integration
+  knowledgeBaseId String?
+  useKnowledgeBase Boolean @default(true)
+  useFAQ          Boolean @default(true)
+  
+  // UI Configuration
+  welcomeMessage  String?
+  primaryColor    String   @default("#3B82F6")
+  secondaryColor  String   @default("#10B981")
+  position        ChatbotPosition @default(BOTTOM_RIGHT)
+  
+  // Features
+  enableVoice     Boolean  @default(false)
+  enableFileUpload Boolean @default(false)
+  enableFeedback  Boolean @default(true)
+  
+  // Privacy & Compliance
+  dataRetention   Int      @default(30) // days
+  enableAnalytics Boolean  @default(true)
+  complianceLevel ComplianceLevel @default(STANDARD)
+  
+  // Settings
+  isDefault       Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  conversations  ChatConversation[]
+  training       ChatbotTraining[]
+  
+  @@map("chatbots")
+}
+
+model ChatConversation {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  chatbotId       String
+  chatbot         Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  
+  // Conversation Details
+  sessionId       String   @unique
+  status          ConversationStatus @default(ACTIVE)
+  
+  // User Information
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  
+  // Anonymous User
+  anonymousId     String?
+  userInfo        String?  // JSON user information
+  
+  // Metadata
+  source          String?  // "web", "mobile", "widget"
+  referrer        String?
+  userAgent       String?
+  ipAddress       String?
+  
+  // Timeline
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  lastActivityAt  DateTime @default(now())
+  
+  // Analytics
+  messageCount    Int      @default(0)
+  resolved        Boolean  @default(false)
+  escalated       Boolean  @default(false)
+  satisfaction   Int?     // 1-5 satisfaction score
+  
+  // Relations
+  messages       ChatMessage[]
+  feedback        ChatFeedback?
+  
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  conversationId  String
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  // Message Details
+  role            MessageRole @default(USER)
+  content         String
+  type            MessageType @default(TEXT)
+  
+  // AI Processing
+  intent          String?
+  confidence      Float?
+  responseTime    Int?     // response time in milliseconds
+  
+  // Knowledge Base
+  sourceArticles  String?  // JSON array of source article IDs
+  citations       String?  // JSON array of citations
+  
+  // File Attachments
+  attachments     String?  // JSON array of file attachments
+  
+  // Status
+  status          ChatMessageStatus @default(DELIVERED)
+  
+  // User relation
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  
+  // Metadata
+  metadata        String?  // JSON additional metadata
+  
+  // Relations
+  feedback        ChatFeedback?
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("chat_messages")
+}
+
+model ChatFeedback {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  conversationId  String   @unique
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  // Feedback Details
+  rating          Int      // 1-5 rating
+  feedback        String?
+  helpful         Boolean
+  issueType       String?  // "inaccurate", "unhelpful", "rude", "technical"
+  
+  // User
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  
+  // Message Specific
+  messageId       String?   @unique
+  message         ChatMessage? @relation(fields: [messageId], references: [id])
+  
+  // Resolution
+  resolvedBy      String?  // "user", "bot", "human"
+  resolutionNotes String?
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("chat_feedback")
+}
+
+model ChatbotTraining {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  chatbotId       String
+  chatbot         Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  
+  // Training Data
+  question        String
+  answer          String
+  category        String?
+  tags            String?  // JSON array of tags
+  
+  // Quality Control
+  confidence      Float    @default(1.0)
+  isActive        Boolean  @default(true)
+  
+  // Source
+  source          String?  // "manual", "imported", "generated"
+  sourceUrl       String?
+  
+  // Usage Analytics
+  useCount        Int      @default(0)
+  helpfulCount    Int      @default(0)
+  
+  // Review
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewStatus    ReviewStatus @default(APPROVED)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("chatbot_training")
+}
+
+// Virtual Events & Webinars System
+model Event {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  
+  // Event Details
+  title           String
+  description     String?
+  type            EventType @default(WEBINAR)
+  status          EventStatus @default(DRAFT)
+  
+  // Scheduling
+  startTime       DateTime
+  endTime         DateTime
+  timezone        String   @default("UTC")
+  
+  // Platform Integration
+  platform        EventPlatform
+  platformEventId String?  // External platform event ID
+  platformConfig  String?  // JSON platform configuration
+  
+  // Capacity
+  maxAttendees    Int?
+  isWaitlistEnabled Boolean @default(false)
+  
+  // Content
+  agenda          String?  // JSON agenda
+  speakers        String?  // JSON array of speakers
+  materials       String?  // JSON array of materials/resources
+  
+  // Registration
+  registrationRequired Boolean @default(true)
+  registrationDeadline DateTime?
+  autoApprove     Boolean @default(true)
+  
+  // Branding
+  bannerImage     String?
+  primaryColor    String?
+  secondaryColor  String?
+  
+  // Settings
+  isRecorded      Boolean  @default(true)
+  recordingUrl    String?
+  enableChat      Boolean  @default(true)
+  enableQAndA      Boolean  @default(true)
+  enablePolls      Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  registrations  EventRegistration[]
+  attendees      EventAttendee[]
+  analytics      EventAnalytics[]
+  
+  @@map("events")
+}
+
+model EventRegistration {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  eventId         String
+  event           Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Registrant Information
+  email           String
+  firstName       String
+  lastName        String
+  phone           String?
+  organization    String?
+  jobTitle        String?
+  
+  // Student/Lead Link
+  studentId       String?
+  student         Student? @relation(fields: [studentId], references: [id])
+  leadId          String?
+  lead            Lead?    @relation(fields: [leadId], references: [id])
+  
+  // Registration Details
+  status          RegistrationStatus @default(PENDING)
+  registeredAt    DateTime @default(now())
+  approvedAt      DateTime?
+  approvedBy      String?
+  
+  // Communication
+  reminderSent     Boolean  @default(false)
+  followUpSent    Boolean  @default(false)
+  
+  // Survey
+  surveyResponse  String?  // JSON survey response
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  attendees       EventAttendee[]
+  
+  @@unique([eventId, email])
+  @@map("event_registrations")
+}
+
+model EventAttendee {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  eventId         String
+  event           Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrationId  String?
+  registration    EventRegistration? @relation(fields: [registrationId], references: [id])
+  
+  // Attendance Details
+  email           String
+  joinTime        DateTime?
+  leaveTime        DateTime?
+  duration        Int?     // minutes attended
+  
+  // Engagement
+  chatMessages    Int      @default(0)
+  questionsAsked  Int      @default(0)
+  pollsResponded   Int      @default(0)
+  resourcesDownloaded Int @default(0)
+  
+  // Platform Data
+  platformUserId  String?
+  platformData    String?  // JSON platform-specific data
+  
+  createdAt       DateTime @default(now())
+  
+  @@map("event_attendees")
+}
+
+model EventAnalytics {
+  id              String   @id @default(cuid())
+  agencyId        String
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  eventId         String
+  event           Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Registration Metrics
+  totalRegistrations Int @default(0)
+  approvedRegistrations Int @default(0)
+  pendingRegistrations Int @default(0)
+  cancelledRegistrations Int @default(0)
+  
+  // Attendance Metrics
+  totalAttendees   Int      @default(0)
+  uniqueAttendees  Int      @default(0)
+  avgAttendanceDuration Float @default(0)
+  peakAttendance  Int      @default(0)
+  
+  // Engagement Metrics
+  totalMessages   Int      @default(0)
+  totalQuestions  Int      @default(0)
+  totalPolls       Int      @default(0)
+  totalPollResponses Int @default(0)
+  totalDownloads   Int      @default(0)
+  
+  // Conversion Metrics
+  conversionRate   Float    @default(0)
+  leadGeneration  Int      @default(0)
+  applicationsStarted Int @default(0)
+  
+  // Platform Metrics
+  platformErrors  Int      @default(0)
+  techIssues      Int      @default(0)
+  
+  // Timeline
+  calculatedAt    DateTime @default(now())
+  
+  @@map("event_analytics")
+}
+
+// Journey Mapping Enums
+enum StageStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  OVERDUE
+}
+
+// Events System Enums
+enum EventType {
+  WEBINAR
+  WORKSHOP
+  SEMINAR
+  INFO_SESSION
+  VIRTUAL_FAIR
+  TRAINING
+  MEETING
+  CUSTOM
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  LIVE
+  ENDED
+  CANCELLED
+  POSTPONED
+}
+
+enum EventPlatform {
+  ZOOM
+  GOOGLE_MEET
+  MICROSOFT_TEAMS
+  WEBEX
+  CUSTOM
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  WAITLISTED
+}
+
+// Chatbot System Enums
+enum ChatbotStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  ARCHIVED
+}
+
+enum ChatbotPosition {
+  BOTTOM_RIGHT
+  BOTTOM_LEFT
+  TOP_RIGHT
+  TOP_LEFT
+  CENTER
+}
+
+enum ComplianceLevel {
+  BASIC
+  STANDARD
+  ENHANCED
+  ENTERPRISE
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ENDED
+  ESCALATED
+  ARCHIVED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  QUICK_REPLY
+  CAROUSEL
+}
+
+enum ChatMessageStatus {
+  DELIVERED
+  READ
+  FAILED
+  PENDING
+}
+
+// Recommendation System Enums
+enum RecommendationType {
+  UNIVERSITY_RECOMMENDATION
+  PROGRAM_RECOMMENDATION
+  SCHOLARSHIP_RECOMMENDATION
+  VISA_PATHWAY_RECOMMENDATION
+  ACCOMMODATION_RECOMMENDATION
+  CAREER_PATH_RECOMMENDATION
+  CUSTOM
+}
+
+enum EngineStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum RecommendationEntityType {
+  STUDENT
+  LEAD
+}
+
+enum RecommendationStatus {
+  PENDING
+  VIEWED
+  CLICKED
+  CONVERTED
+  EXPIRED
+  DISMISSED
+}
+
+// Knowledge Base Enums
+enum KnowledgeType {
+  UNIVERSITY_GUIDE
+  VISA_GUIDE
+  PROGRAM_REQUIREMENTS
+  ADMISSION_PROCESS
+  SCHOLARSHIP_INFO
+  ACCOMMODATION_GUIDE
+  HEALTH_INSURANCE
+  CULTURAL_GUIDE
+  GENERAL_INFO
+  CUSTOM
+}
+
+enum KnowledgeCategory {
+  GENERAL
+  ADMISSIONS
+  VISA
+  ACADEMIC
+  FINANCIAL
+  ACCOMMODATION
+  HEALTH
+  LEGAL
+  CUSTOM
+}
+
+enum ReviewStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+// Milestone System Enums
+enum MilestoneType {
+  DOCUMENT_SUBMISSION
+  APPLICATION_FILED
+  INTERVIEW_SCHEDULED
+  FEE_PAID
+  VISA_SUBMITTED
+  OFFER_RECEIVED
+  OFFER_ACCEPTED
+  VISA_APPROVED
+  ENROLLMENT_CONFIRMED
+  DEPARTURE_PREPARED
+  CUSTOM
+}
+
+enum MilestoneCategory {
+  GENERAL
+  APPLICATION
+  VISA
+  FINANCIAL
+  ACADEMIC
+  LOGISTICAL
+  CUSTOM
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+  OVERDUE
+}
+
+enum JourneyEventType {
+  STAGE_CHANGED
+  DOCUMENT_UPLOADED
+  INTERVIEW_SCHEDULED
+  FEE_PAID
+  VISA_SUBMITTED
+  OFFER_RECEIVED
+  APPLICATION_FILED
+  MILESTONE_REACHED
+  SLA_BREACHED
+  MANUAL_OVERRIDE
+  AUTO_ACTION_TRIGGERED
+  REMINDER_SENT
+  ESCALATION_TRIGGERED
+}
+
+enum TriggeredByType {
+  USER
+  SYSTEM
+  AUTOMATION
+  WEBHOOK
+}
+
+// Accounting Integration Enums
+enum AccountingProvider {
+  QUICKBOOKS
+  XERO
+  WAVE
+  FRESHBOOKS
+  ZOHO_BOOKS
+  SAGE
+  NETSUITE
+  CUSTOM
+}
+
+enum SyncStatus {
+  NOT_CONNECTED
+  CONNECTING
+  CONNECTED
+  SYNCING
+  SYNC_FAILED
+  SYNC_SUCCESS
+}
+enum AgencyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum AgencyPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  AGENCY_ADMIN
+  CONSULTANT
+  SUPPORT
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum StudentStatus {
+  PROSPECT
+  APPLIED
+  ACCEPTED
+  ENROLLED
+  GRADUATED
+  WITHDRAWN
+}
+
+enum ApplicationStage {
+  INQUIRY
+  CONSULTATION
+  APPLICATION
+  DOCUMENTATION
+  VISA_PROCESSING
+  PRE_DEPARTURE
+  POST_ARRIVAL
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum PartnershipLevel {
+  NONE
+  BASIC
+  PREMIUM
+  STRATEGIC
+}
+
+// Accounting Enums
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum InvoiceTemplateServiceType {
+  CONSULTATION
+  VISA_PROCESSING
+  DOCUMENT_REVIEW
+  APPLICATION_FEE
+  TUITION_FEE
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  REFUND
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// Marketing Enums
+enum CampaignType {
+  EMAIL
+  SMS
+  SOCIAL_MEDIA
+  GOOGLE_ADS
+  FACEBOOK_ADS
+  CONTENT
+  WEBINAR
+  EVENT
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  NURTURING
+  CONVERTED
+  LOST
+}
+
+// Landing Page Enums
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Form Enums
+enum FormStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+// Workflow Enums
+enum WorkflowCategory {
+  GENERAL
+  LEAD_NURTURING
+  STUDENT_ONBOARDING
+  FOLLOW_UP
+  NOTIFICATION
+  INTEGRATION
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+// Lead Scoring Enums
+enum ScoreRuleCategory {
+  ENGAGEMENT
+  DEMOGRAPHIC
+  ACADEMIC
+  BEHAVIORAL
+  SOURCE
+  CUSTOM
+}
+
+enum ScoreAction {
+  ADD
+  SUBTRACT
+  MULTIPLY
+  SET
+}
+
+enum QualificationCategory {
+  ACADEMIC
+  FINANCIAL
+  GEOGRAPHIC
+  LANGUAGE
+  EXPERIENCE
+  CUSTOM
+}
+
+// Segmentation Enums
+enum SegmentType {
+  STATIC
+  DYNAMIC
+  HYBRID
+}
+
+enum SegmentCategory {
+  GENERAL
+  LEAD
+  STUDENT
+  APPLICATION
+  ALUMNI
+  CUSTOM
+}
+
+enum MemberType {
+  STUDENT
+  LEAD
+  USER
+}
+
+enum TagCategory {
+  GENERAL
+  LEAD
+  STUDENT
+  APPLICATION
+  DOCUMENT
+  TASK
+  CUSTOM
+}
+
+enum EntityType {
+  STUDENT
+  LEAD
+  USER
+  APPLICATION
+  DOCUMENT
+  TASK
+}
+
+// Appointment Enums
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum AppointmentType {
+  CONSULTATION
+  FOLLOW_UP
+  DOCUMENT_REVIEW
+  APPLICATION_REVIEW
+  VISA_INTERVIEW
+  GENERAL
+}
+
+enum NoteType {
+  GENERAL
+  IMPORTANT
+  FOLLOW_UP
+  DECISION
+  REMINDER
+}
+
+// Communication Enums
+enum TemplateCategory {
+  GENERAL
+  WELCOME
+  FOLLOW_UP
+  REMINDER
+  NOTIFICATION
+  MARKETING
+  SUPPORT
+}
+
+enum CampaignMessageStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+}
+
+// Document Enums
+enum DocumentType {
+  GENERAL
+  PASSPORT
+  TRANSCRIPT
+  CERTIFICATE
+  ESSAY
+  RECOMMENDATION
+  FINANCIAL
+  VISA
+  CUSTOM
+}
+
+enum DocumentCategory {
+  GENERAL
+  PERSONAL
+  ACADEMIC
+  FINANCIAL
+  LEGAL
+  MEDICAL
+  CUSTOM
+}
+
+enum AccessLevel {
+  VIEW
+  DOWNLOAD
+  EDIT
+  AGENCY
+  ADMIN
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+  EXPIRED
+}
+
+enum SharedWithType {
+  USER
+  STUDENT
+  LEAD
+}
+
+// Notification Enums
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ALERT
+}
+
+enum RecipientType {
+  USER
+  STUDENT
+  LEAD
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+  PUSH
+  WEBHOOK
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Task Enums
+enum TaskType {
+  GENERAL
+  FOLLOW_UP
+  DOCUMENT_REVIEW
+  APPLICATION_REVIEW
+  CALL
+  EMAIL
+  MEETING
+  REMINDER
+}
+
+enum TaskCategory {
+  GENERAL
+  LEAD
+  STUDENT
+  APPLICATION
+  DOCUMENT
+  COMMUNICATION
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DEFERRED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Pipeline Enums
+enum PipelineType {
+  LEAD_CONVERSION
+  STUDENT_ONBOARDING
+  APPLICATION_PROCESSING
+  VISA_PROCESSING
+  DOCUMENT_COLLECTION
+  GENERAL
+}
+
+enum PipelineCategory {
+  GENERAL
+  LEAD
+  STUDENT
+  APPLICATION
+  VISA
+  CUSTOM
+}
